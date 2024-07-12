@@ -1,0 +1,547 @@
+CREATE DATABASE ultimate_team_race;
+
+USE ultimate_team_race;
+
+-- Création de la table "roles"
+CREATE TABLE role (
+    id_role INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+-- Insertion des données initiales dans la table "roles"
+INSERT INTO role (name) VALUES 
+('Admin'),('Team');
+
+CREATE TABLE genre(
+  id_genre INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(250) NOT NULL
+  );
+    
+INSERT INTO genre (name) VALUES 
+('Male'),('Female');
+  
+CREATE TABLE category(
+  id_category INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL
+  );
+
+-- Insertion Admin
+INSERT INTO users(login, name, email ,created_at,updated_at, id_role,password) VALUES 
+('Clement','Clement','clement@gmail.com',NOW(),NOW(),1,SHA2('Clement',256)),
+('Victorin','Victorin','victorin@gmail.com',NOW(),NOW(),1,SHA2('Victorin',256));
+
+
+-- Création de la table "runners"
+CREATE TABLE runners (
+    id_runner INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    numero_dossard INT,
+    birthdate DATE,
+    id_genre INT,
+    id_user BIGINT UNSIGNED,
+    FOREIGN KEY (id_genre) REFERENCES genre(id_genre),
+    FOREIGN KEY (id_user) REFERENCES users(id)
+);
+
+ALTER TABLE runners ADD CONSTRAINT unique_numero_dossard UNIQUE (numero_dossard);
+-- Création de la table "category_runner"
+CREATE TABLE category_runner (
+    id_category_runner INT AUTO_INCREMENT PRIMARY KEY,
+    id_runner INT,
+    id_category INT,
+    FOREIGN KEY (id_runner) REFERENCES runners(id_runner),
+    FOREIGN KEY (id_category) REFERENCES category(id_category)
+);
+
+-- Création de la table "step"
+CREATE TABLE step (
+    id_step INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    length DECIMAL(10, 2),
+    number_runner_foreachteam INT,
+    rank_step INT,
+  	start_time TIME,
+  	start_date DATE
+);
+
+
+-- Création de la table "step_runner"
+CREATE TABLE step_runner (
+    id_step_runner INT AUTO_INCREMENT PRIMARY KEY,
+    id_step INT,
+    id_runner INT,
+    start_time TIME,
+  	start_date DATE ,
+    end_time DATETIME,
+    FOREIGN KEY (id_step) REFERENCES step(id_step),
+    FOREIGN KEY (id_runner) REFERENCES runners(id_runner)
+);
+
+CREATE TABLE point (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    rank_runner INT,
+    points INT
+);
+
+
+
+INSERT INTO category(name) VALUES 
+('Male'),('Female'),('Junior'),('Senior');
+
+
+-- insertion team
+INSERT INTO users (name, email, password, login, id_role)
+VALUES 
+('Thunderbolts', 'thunderbolts@gmail.com',SHA2( 'thunder_pwd',256), 'thunder_login', 2),
+('Red Dragons', 'reddragons@yahoo.com', SHA2('dragon_pwd',256), 'dragon_login', 2),
+('Blue Whales', 'bluewhales@hotmail.com',SHA2( 'whale_pwd',256), 'whale_login', 2);
+
+-- Insertion de coureurs pour chaque équipe
+INSERT INTO runners (name, numero_dossard, birthdate, id_genre, id_user)
+VALUES 
+    ('John Smith', 101, '2005-05-15', 1, 1),
+    ('Emma Johnson', 102, '1992-08-20', 2, 1),
+    ('Michael Williams', 103, '1994-11-25', 1, 1),
+    ('Jessica Brown', 104, '1996-03-30', 2, 1),
+    ('David Taylor', 105, '1998-06-05', 1, 1),
+    
+    ('Sarah Clark', 201, '1991-07-20', 2, 2),
+    ('Daniel Martinez', 202, '1993-09-25', 1, 2),
+    ('Jennifer Lee', 203, '1995-01-30', 2, 2),
+    ('Matthew Thompson', 204, '2009-06-10', 1, 2),
+    ('Olivia Scott', 205, '1999-07-10', 2, 2),
+    
+    ('William Rodriguez', 301, '1992-09-25', 1, 3),
+    ('Sophia Walker', 302, '1994-12-30', 2, 3),
+    ('James White', 303, '1996-04-05', 1, 3),
+    ('Isabella Harris', 304, '1998-07-10', 2, 3),
+    ('Alexander King', 305, '2000-10-15', 1, 3);
+
+-----------------------------------------------------------------
+-- insertion des etapes 
+INSERT INTO step (name, length, number_runner_foreachteam, rank_step,start_time,start_date)
+VALUES 
+    ('Dragona', 15.00, 2, 1,'08:00:00','2024-03-03'),  -- Étape 1, 2 coureurs par équipe
+    ('Bibilava', 20.00, 2, 2,'10:00:00','2024-03-03'), -- Étape 2, 2 coureurs par équipe
+    ('Barea', 25.00, 1, 3,'13:00:00','2024-03-04'),    -- Étape 3, 1 coureur par équipe
+    ('Saka', 20, 2, 4,'20:00:00','2024-03-04');
+    
+    
+CREATE TRIGGER before_insert_step_runner
+BEFORE INSERT ON step_runner
+FOR EACH ROW
+BEGIN
+    -- Obtenir l'heure de début et la date de début de l'étape
+    DECLARE step_start_time TIME;
+    DECLARE step_start_date DATE;
+    
+    SELECT start_time, start_date
+    INTO step_start_time, step_start_date
+    FROM step
+    WHERE id_step = NEW.id_step;
+    
+    -- Mettre l'heure de début et la date de début de l'étape pour tous les coureurs
+    SET NEW.start_time = step_start_time;
+    SET NEW.start_date = step_start_date;
+END;
+ 
+
+-- Insertion des participations aux étapes dans la table "step_runner" avec ordre de coureurs changé
+INSERT INTO step_runner (id_step, id_runner, end_time)
+VALUES 
+    -- Team 1
+    (1, 2, '2024-03-04 01:00:15'),  -- Runner 2 from Team 1 on Step 1
+    (1, 1, '2024-03-03 08:45:00'),  -- Runner 1 from Team 1 on Step 1
+    (2, 3, '2024-03-03 10:55:00'),  -- Runner 3 from Team 1 on Step 2
+    (2, 4, '2024-03-03 11:00:00'),  -- Runner 4 from Team 1 on Step 2
+    (3, 5, '2024-03-04 14:30:00'),  -- Runner 5 from Team 1 on Step 3
+    -- Team 2
+    (1, 7, '2024-03-03 09:55:00'),  -- Runner 2 from Team 2 on Step 1
+    (1, 6, '2024-03-03 08:40:00'),  -- Runner 1 from Team 2 on Step 1
+    (2, 9, '2024-03-03 10:50:00'),  -- Runner 4 from Team 2 on Step 2
+    (2, 8, '2024-03-03 10:45:00'),  -- Runner 3 from Team 2 on Step 2
+    (3, 10,'2024-03-04 14:00:00'), -- Runner 5 from Team 2 on Step 3
+    
+    -- Team 3
+    (1, 12, '2024-03-04 02:10:25'), -- Runner 2 from Team 3 on Step 1
+    (1, 11,  '2024-03-03 08:50:00'), -- Runner 1 from Team 3 on Step 1
+    (2, 13,  '2024-03-03 11:00:00'), -- Runner 3 from Team 3 on Step 2
+    (2, 14,  '2024-03-03 11:05:00'), -- Runner 4 from Team 3 on Step 2
+    (3, 15,  '2024-03-04 14:20:00'); -- Runner 5 from Team 3 on Step 3
+  
+ INSERT INTO point (rank_runner, points) VALUES 
+    (1, 10),
+    (2, 6),
+    (3, 4),
+    (4, 2),
+    (5, 1);
+
+-- liste de coureur pour chaque equipe 
+SELECT 
+    u.name AS team_name,
+    r.name AS runner_name,
+    r.numero_dossard,
+    r.birthdate,
+    g.name AS gender
+FROM 
+    runners r
+JOIN 
+    users u ON r.id_user = u.id
+JOIN 
+    genre g ON r.id_genre = g.id_genre
+ORDER BY 
+    u.name, r.name;
+
+   
+-- Obtenir le rang des participants pour chaque étape avec l'ID de l'étape, le nom de l'étape, l'ID du coureur, le rang du coureur et les points attribués
+SELECT 
+    sr.id_step,
+    s.name AS step_name,
+    sr.id_runner,
+    r.name AS participant_name,
+    sr.participant_rank,
+    CASE 
+        WHEN sr.participant_rank > 5 THEN 0
+        ELSE p.points 
+    END AS points_awarded
+FROM 
+    step_rank sr
+JOIN 
+    step s ON sr.id_step = s.id_step
+JOIN 
+    point p ON sr.participant_rank = p.rank_runner
+JOIN 
+    runners r ON sr.id_runner = r.id_runner
+ORDER BY 
+    sr.id_step;
+
+
+
+SELECT 
+    s.id_step AS step_id,
+    s.name AS step_name,
+    u.id AS user_id,
+    u.name AS user_name,
+    COUNT(sr.id_runner) AS runner_count
+FROM
+    step s
+    INNER JOIN step_runner sr ON s.id_step = sr.id_step
+    INNER JOIN runners r ON sr.id_runner = r.id_runner
+    INNER JOIN users u ON r.id_user = u.id
+GROUP BY
+    s.id_step,
+    u.id
+ORDER BY
+    s.id_step;
+ -- calculer age coureur    
+CREATE OR REPLACE VIEW runners_age AS
+SELECT 
+    r.id_runner, 
+    r.name, 
+   YEAR( r.birthdate) as YEAR_birthdate, 
+    r.id_genre,
+    YEAR(CURRENT_DATE()) - YEAR(r.birthdate) AS age,
+    g.name AS genre
+FROM 
+    runners r
+JOIN 
+    genre g ON r.id_genre = g.id_genre;
+
+-- Création d'une vue pour calculer le rang des participants pour chaque étape
+CREATE OR REPLACE VIEW step_rank AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    r.id_user AS team_id,
+    r.name AS runner_name,
+    sr.start_date,
+    sr.start_time,
+    sr.end_time,
+    TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time) AS chrono_seconds,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    COALESCE(p.total_penalty, '00:00:00') AS total_penalty,
+    TIME_FORMAT(ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00')), '%H:%i:%s') AS chrono_final,
+    DENSE_RANK() OVER (PARTITION BY sr.id_step ORDER BY ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00'))) AS participant_rank
+FROM
+    step_runner sr
+LEFT JOIN
+    runners r ON sr.id_runner = r.id_runner
+LEFT JOIN
+    (
+        SELECT id_user, id_step, SEC_TO_TIME(SUM(TIME_TO_SEC(val))) AS total_penalty
+        FROM penalty
+        GROUP BY id_user, id_step
+    ) p ON r.id_user = p.id_user AND sr.id_step = p.id_step;
+
+
+-- --------------------   CLASSEMENT GENERAL
+SELECT
+    users.name AS team_name,
+    SUM(points) AS total_points
+FROM
+    (
+        SELECT
+            step_rank.id_runner,
+            point.points
+        FROM
+            step_rank
+        JOIN
+            point ON step_rank.participant_rank = point.rank_runner
+    ) AS ranked_points
+JOIN
+    runners ON ranked_points.id_runner = runners.id_runner
+JOIN
+    users ON runners.id_user = users.id
+GROUP BY
+    users.name
+ORDER BY
+    total_points DESC;
+
+
+
+-- --------------------   CLASSEMENT Par categorie
+-- Vue pour les coureurs masculins de la catégorie 1
+CREATE OR REPLACE VIEW step_rank_male AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    r.id_user AS user_id,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00'))
+    ) AS participant_rank,
+    COALESCE(p.total_penalty, '00:00:00') AS penalty,
+    TIME_FORMAT(ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00')), '%H:%i:%s') AS chrono_final
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+LEFT JOIN
+    runners r ON sr.id_runner = r.id_runner
+LEFT JOIN
+    (
+        SELECT id_user, id_step, SEC_TO_TIME(SUM(TIME_TO_SEC(val))) AS total_penalty
+        FROM penalty
+        GROUP BY id_user, id_step
+    ) p ON r.id_user = p.id_user AND sr.id_step = p.id_step
+WHERE 
+    cr.id_category = 1;
+
+
+
+-- Vue pour les coureurs féminins de la catégorie 2
+CREATE OR REPLACE VIEW step_rank_female AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    r.id_user AS user_id,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00'))
+    ) AS participant_rank,
+    COALESCE(p.total_penalty, '00:00:00') AS penalty,
+    TIME_FORMAT(ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00')), '%H:%i:%s') AS chrono_final
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+LEFT JOIN
+    runners r ON sr.id_runner = r.id_runner
+LEFT JOIN
+    (
+        SELECT id_user, id_step, SEC_TO_TIME(SUM(TIME_TO_SEC(val))) AS total_penalty
+        FROM penalty
+        GROUP BY id_user, id_step
+    ) p ON r.id_user = p.id_user AND sr.id_step = p.id_step
+WHERE 
+    cr.id_category = 2;
+
+-- Vue pour les coureurs juniors de la catégorie 3
+CREATE OR REPLACE VIEW step_rank_junior AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    r.id_user AS user_id,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00'))
+    ) AS participant_rank,
+    COALESCE(p.total_penalty, '00:00:00') AS penalty,
+    TIME_FORMAT(ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00')), '%H:%i:%s') AS chrono_final
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+LEFT JOIN
+    runners r ON sr.id_runner = r.id_runner
+LEFT JOIN
+    (
+        SELECT id_user, id_step, SEC_TO_TIME(SUM(TIME_TO_SEC(val))) AS total_penalty
+        FROM penalty
+        GROUP BY id_user, id_step
+    ) p ON r.id_user = p.id_user AND sr.id_step = p.id_step
+WHERE 
+    cr.id_category = 3;
+
+-- Vue pour les coureurs seniors de la catégorie 4
+CREATE OR REPLACE VIEW step_rank_senior AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    r.id_user AS user_id,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00'))
+    ) AS participant_rank,
+    COALESCE(p.total_penalty, '00:00:00') AS penalty,
+    TIME_FORMAT(ADDTIME(SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)), COALESCE(p.total_penalty, '00:00:00')), '%H:%i:%s') AS chrono_final
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+LEFT JOIN
+    runners r ON sr.id_runner = r.id_runner
+LEFT JOIN
+    (
+        SELECT id_user, id_step, SEC_TO_TIME(SUM(TIME_TO_SEC(val))) AS total_penalty
+        FROM penalty
+        GROUP BY id_user, id_step
+    ) p ON r.id_user = p.id_user AND sr.id_step = p.id_step
+WHERE 
+    cr.id_category = 4;
+    
+ALTER TABLE users MODIFY email VARCHAR(255) NULL;   
+
+-- Pénalité
+CREATE TABLE penalty (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  id_user BIGINT UNSIGNED,
+  id_step INT,
+  val TIME,
+  FOREIGN KEY(id_user) REFERENCES users(id),
+  FOREIGN KEY(id_step) REFERENCES step(id_step)
+  );
+ 
+  
+  insert into penalty (id_user ,id_step , val )VALUES
+  (7,1,'00:05:10');
+  insert into penalty (id_user, id_step , val ) VALUES (7,1,'00:00:50');
+  
+  insert into penalty(id_user ,id_step ,val) VALUES (9,4,'00:05:00'),(9,4,'00:02:00'),(9,4,'00:53:00');
+
+
+/*   VIEW STEP_rank sans CHRONO 
+CREATE OR REPLACE VIEW step_rank AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    sr.start_date,
+    sr.start_time,
+    sr.end_time,
+    TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time) AS chrono_seconds,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (PARTITION BY sr.id_step ORDER BY sr.end_time) AS participant_rank
+FROM
+    step_runner sr;
+    
+    
+    -- Vue step_rank_male
+CREATE OR REPLACE VIEW step_rank_male AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY sr.end_time
+    ) AS participant_rank
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+WHERE 
+    cr.id_category = 1;
+
+
+-- Vue step_rank_female
+CREATE OR REPLACE VIEW step_rank_female AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY sr.end_time
+    ) AS participant_rank
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+WHERE 
+    cr.id_category = 2;
+
+-- Vue step_rank_junior
+CREATE OR REPLACE VIEW step_rank_junior AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY sr.end_time
+    ) AS participant_rank
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+WHERE 
+    cr.id_category = 3;
+
+-- Vue step_rank_senior
+CREATE OR REPLACE VIEW step_rank_senior AS
+SELECT 
+    sr.id_step_runner,
+    sr.id_step,
+    sr.id_runner,
+    sr.start_time,
+    sr.end_time,
+    SEC_TO_TIME(TIMESTAMPDIFF(SECOND, CONCAT(sr.start_date, ' ', sr.start_time), sr.end_time)) AS chrono,
+    DENSE_RANK() OVER (
+        PARTITION BY sr.id_step 
+        ORDER BY sr.end_time
+    ) AS participant_rank
+FROM
+    step_runner sr
+JOIN 
+    category_runner cr ON sr.id_runner = cr.id_runner
+WHERE 
+    cr.id_category = 4;
+*/
+

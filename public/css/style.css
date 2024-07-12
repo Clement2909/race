@@ -1,0 +1,35 @@
+body {
+  padding:0;
+  margin : 0;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: #333333;
+  }
+  
+  th, td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+    color: white;
+  }
+  
+  th {
+    background-color: #444444;
+  }
+
+  footer {
+    background-color: #333333;
+    color: #fff; /* Blanc */
+    padding: 20px; /* Espace intérieur autour du contenu */
+    text-align: center; /* Centrage du texte */
+    position: fixed; /* Positionnement fixe */
+    bottom: 0; /* Collé en bas de la fenêtre */
+    width: 100%; /* Largeur à 100% */
+    }
+
+        footer p {
+            margin: 5px 0; /* Marge autour de chaque paragraphe */
+        }
